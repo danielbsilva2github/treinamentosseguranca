@@ -26,9 +26,7 @@
   }
   h1 { text-align: center; color: #1e3c72; margin-bottom: 10px; }
   .subtitulo { text-align: center; color: #666; margin-bottom: 25px; font-size: 14px; }
-  .barra-progresso {
-    background: #e0e0e0; border-radius: 10px; height: 10px; margin-bottom: 25px; overflow: hidden;
-  }
+  .barra-progresso { background: #e0e0e0; border-radius: 10px; height: 10px; margin-bottom: 25px; overflow: hidden; }
   .progresso { background: #2a5298; height: 100%; width: 0%; transition: width 0.4s; }
   .pergunta { font-size: 20px; font-weight: 600; margin-bottom: 20px; }
   .opcoes { display: flex; flex-direction: column; gap: 12px; }
@@ -51,11 +49,59 @@
   }
   .btn:hover { background: #1e3c72; }
   .btn:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-secundario { background: #6c757d; }
+  .btn-secundario:hover { background: #565e64; }
   .resultado { text-align: center; }
   .resultado h2 { color: #1e3c72; margin-bottom: 15px; }
   .pontuacao { font-size: 48px; font-weight: bold; color: #2a5298; margin: 20px 0; }
   .mensagem-final { font-size: 18px; margin-bottom: 20px; }
   .contador { text-align: center; color: #888; font-size: 14px; margin-bottom: 10px; }
+  .campo-nome {
+    width: 100%; padding: 14px; font-size: 16px; border: 2px solid #e0e0e0;
+    border-radius: 10px; margin: 15px 0; text-align: center;
+  }
+  .campo-nome:focus { outline: none; border-color: #2a5298; }
+
+  /* ===== CERTIFICADO ===== */
+  .certificado {
+    border: 10px solid #2a5298;
+    border-radius: 12px;
+    padding: 40px 30px;
+    text-align: center;
+    background: #fdfdfd;
+    color: #333;
+    position: relative;
+    margin-top: 10px;
+  }
+  .certificado::before {
+    content: "";
+    position: absolute; inset: 12px;
+    border: 2px solid #b8c6e0;
+    border-radius: 8px;
+    pointer-events: none;
+  }
+  .certificado .selo { font-size: 50px; margin-bottom: 10px; }
+  .certificado h2 { color: #1e3c72; font-size: 26px; letter-spacing: 1px; margin-bottom: 5px; }
+  .certificado .linha { color: #888; font-size: 14px; margin-bottom: 25px; }
+  .certificado .nome {
+    font-size: 30px; font-weight: bold; color: #2a5298;
+    border-bottom: 2px solid #ccc; display: inline-block;
+    padding: 5px 30px; margin: 10px 0;
+  }
+  .certificado .texto { font-size: 16px; line-height: 1.6; margin: 15px 0; color: #555; }
+  .certificado .rodape {
+    display: flex; justify-content: space-between;
+    margin-top: 35px; font-size: 13px; color: #777;
+  }
+  .certificado .rodape div { width: 45%; border-top: 1px solid #999; padding-top: 6px; }
+
+  /* Esconde tudo menos o certificado ao imprimir */
+  @media print {
+    body { background: #fff; padding: 0; }
+    .container { box-shadow: none; padding: 0; }
+    .no-print { display: none !important; }
+    .certificado { border-color: #2a5298; }
+  }
 </style>
 </head>
 <body>
@@ -65,10 +111,11 @@
   <div id="tela-inicial">
     <h1>🔐 Quiz de Segurança da Informação</h1>
     <p class="subtitulo">Teste seus conhecimentos sobre boas práticas de segurança digital</p>
-    <p style="text-align:center; margin: 20px 0; line-height: 1.6;">
-      Você responderá algumas perguntas sobre senhas, phishing, dados sensíveis e mais.
-      A cada resposta você recebe uma explicação. Boa sorte! 🚀
+    <p style="text-align:center; margin: 15px 0; line-height: 1.6;">
+      Responda às perguntas sobre senhas, phishing, dados sensíveis e mais.
+      Ao final, gere seu <strong>certificado de conclusão</strong>! 🏅
     </p>
+    <input type="text" id="nome-participante" class="campo-nome" placeholder="Digite seu nome completo" maxlength="50">
     <button class="btn" onclick="iniciarQuiz()">Começar Quiz</button>
   </div>
 
@@ -87,13 +134,35 @@
     <h2>Quiz Concluído! 🎯</h2>
     <div class="pontuacao" id="pontuacao"></div>
     <p class="mensagem-final" id="mensagem-final"></p>
-    <button class="btn" onclick="reiniciarQuiz()">Refazer Quiz</button>
+    <button class="btn" id="btn-certificado" onclick="mostrarCertificado()">📜 Gerar Certificado</button>
+    <button class="btn btn-secundario" onclick="reiniciarQuiz()">Refazer Quiz</button>
+  </div>
+
+  <!-- TELA DO CERTIFICADO -->
+  <div id="tela-certificado" style="display:none;">
+    <div class="certificado" id="certificado">
+      <div class="selo">🏅</div>
+      <h2>CERTIFICADO DE CONCLUSÃO</h2>
+      <p class="linha">Conscientização em Segurança da Informação</p>
+      <p class="texto">Certificamos que</p>
+      <div class="nome" id="cert-nome">Nome do Participante</div>
+      <p class="texto">
+        concluiu com êxito o Quiz de Conscientização em Segurança da Informação,
+        obtendo a pontuação de <strong id="cert-pontuacao"></strong>.
+      </p>
+      <div class="rodape">
+        <div>Data: <span id="cert-data"></span></div>
+        <div>Equipe de Segurança da Informação</div>
+      </div>
+    </div>
+    <button class="btn no-print" onclick="imprimirCertificado()">🖨️ Imprimir / Salvar em PDF</button>
+    <button class="btn btn-secundario no-print" onclick="reiniciarQuiz()">Voltar ao Início</button>
   </div>
 </div>
 
 <script>
   // ===== BANCO DE PERGUNTAS =====
-  const perguntas = [
+  const perguntasOriginais = [
     {
       pergunta: "Qual destas é considerada uma senha forte?",
       opcoes: ["123456", "senha123", "P@ss!2024#Xk9", "nome do seu cachorro"],
@@ -138,14 +207,55 @@
     }
   ];
 
+  let perguntas = [];
   let perguntaAtual = 0;
   let pontuacao = 0;
+  let nomeParticipante = "";
+
+  // ===== FUNÇÃO DE EMBARALHAR (Fisher-Yates) =====
+  function embaralhar(array) {
+    const copia = [...array];
+    for (let i = copia.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copia[i], copia[j]] = [copia[j], copia[i]];
+    }
+    return copia;
+  }
+
+  // Prepara as perguntas embaralhando perguntas E opções
+  function prepararPerguntas() {
+    // 1. Embaralha a ordem das perguntas
+    const perguntasEmbaralhadas = embaralhar(perguntasOriginais);
+
+    // 2. Embaralha as opções de cada pergunta, mantendo o controle da correta
+    perguntas = perguntasEmbaralhadas.map(q => {
+      const textoCorreto = q.opcoes[q.correta];
+      const opcoesEmbaralhadas = embaralhar(q.opcoes);
+      return {
+        pergunta: q.pergunta,
+        opcoes: opcoesEmbaralhadas,
+        correta: opcoesEmbaralhadas.indexOf(textoCorreto), // novo índice da correta
+        explicacao: q.explicacao
+      };
+    });
+  }
 
   function iniciarQuiz() {
-    document.getElementById('tela-inicial').style.display = 'none';
-    document.getElementById('tela-quiz').style.display = 'block';
+    const campoNome = document.getElementById('nome-participante');
+    nomeParticipante = campoNome.value.trim();
+
+    if (nomeParticipante === "") {
+      alert("Por favor, digite seu nome para começar! 😊");
+      campoNome.focus();
+      return;
+    }
+
+    prepararPerguntas();           // embaralha tudo
     perguntaAtual = 0;
     pontuacao = 0;
+
+    document.getElementById('tela-inicial').style.display = 'none';
+    document.getElementById('tela-quiz').style.display = 'block';
     mostrarPergunta();
   }
 
@@ -155,11 +265,9 @@
     document.getElementById('contador').textContent =
       `Pergunta ${perguntaAtual + 1} de ${perguntas.length}`;
 
-    // Atualiza barra de progresso
     const pct = (perguntaAtual / perguntas.length) * 100;
     document.getElementById('progresso').style.width = pct + '%';
 
-    // Cria as opções
     const divOpcoes = document.getElementById('opcoes');
     divOpcoes.innerHTML = '';
     q.opcoes.forEach((opcao, i) => {
@@ -170,7 +278,6 @@
       divOpcoes.appendChild(el);
     });
 
-    // Reseta feedback e botão
     const fb = document.getElementById('feedback');
     fb.className = 'feedback';
     fb.textContent = '';
@@ -223,11 +330,42 @@
     else msg = '⚠️ Atenção! É importante reforçar seus conhecimentos em segurança.';
 
     document.getElementById('mensagem-final').textContent = msg;
+
+    // Libera certificado apenas com aproveitamento mínimo (opcional: 70%)
+    const btnCert = document.getElementById('btn-certificado');
+    if (pct >= 70) {
+      btnCert.style.display = 'block';
+      btnCert.textContent = '📜 Gerar Certificado';
+    } else {
+      btnCert.style.display = 'block';
+      btnCert.textContent = '📜 Gerar Certificado (participação)';
+    }
+  }
+
+  function mostrarCertificado() {
+    document.getElementById('tela-resultado').style.display = 'none';
+    document.getElementById('tela-certificado').style.display = 'block';
+
+    document.getElementById('cert-nome').textContent = nomeParticipante;
+    document.getElementById('cert-pontuacao').textContent =
+      `${pontuacao} de ${perguntas.length} acertos`;
+
+    // Data formatada (pt-BR)
+    const hoje = new Date();
+    document.getElementById('cert-data').textContent =
+      hoje.toLocaleDateString('pt-BR');
+  }
+
+  function imprimirCertificado() {
+    window.print();
   }
 
   function reiniciarQuiz() {
+    document.getElementById('tela-certificado').style.display = 'none';
     document.getElementById('tela-resultado').style.display = 'none';
+    document.getElementById('tela-quiz').style.display = 'none';
     document.getElementById('tela-inicial').style.display = 'block';
+    document.getElementById('nome-participante').value = nomeParticipante;
   }
 </script>
 
