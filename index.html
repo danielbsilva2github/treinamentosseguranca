@@ -1,16 +1,235 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Minha Página Interativa</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz - Conscientização em Segurança da Informação</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+  body {
+    background: linear-gradient(135deg, #1e3c72, #2a5298);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    color: #fff;
+  }
+  .container {
+    background: #fff;
+    color: #333;
+    max-width: 700px;
+    width: 100%;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    padding: 40px;
+  }
+  h1 { text-align: center; color: #1e3c72; margin-bottom: 10px; }
+  .subtitulo { text-align: center; color: #666; margin-bottom: 25px; font-size: 14px; }
+  .barra-progresso {
+    background: #e0e0e0; border-radius: 10px; height: 10px; margin-bottom: 25px; overflow: hidden;
+  }
+  .progresso { background: #2a5298; height: 100%; width: 0%; transition: width 0.4s; }
+  .pergunta { font-size: 20px; font-weight: 600; margin-bottom: 20px; }
+  .opcoes { display: flex; flex-direction: column; gap: 12px; }
+  .opcao {
+    background: #f5f7fa; border: 2px solid #e0e0e0; border-radius: 10px;
+    padding: 15px; cursor: pointer; transition: all 0.2s; font-size: 16px;
+  }
+  .opcao:hover { border-color: #2a5298; background: #eef3fb; }
+  .opcao.correta { background: #d4edda; border-color: #28a745; }
+  .opcao.errada { background: #f8d7da; border-color: #dc3545; }
+  .opcao.desabilitada { pointer-events: none; }
+  .feedback { margin-top: 18px; padding: 15px; border-radius: 10px; font-size: 15px; display: none; }
+  .feedback.show { display: block; }
+  .feedback.ok { background: #d4edda; color: #155724; }
+  .feedback.no { background: #f8d7da; color: #721c24; }
+  .btn {
+    background: #2a5298; color: #fff; border: none; padding: 14px 30px;
+    border-radius: 10px; font-size: 16px; cursor: pointer; margin-top: 20px;
+    width: 100%; transition: background 0.2s;
+  }
+  .btn:hover { background: #1e3c72; }
+  .btn:disabled { background: #ccc; cursor: not-allowed; }
+  .resultado { text-align: center; }
+  .resultado h2 { color: #1e3c72; margin-bottom: 15px; }
+  .pontuacao { font-size: 48px; font-weight: bold; color: #2a5298; margin: 20px 0; }
+  .mensagem-final { font-size: 18px; margin-bottom: 20px; }
+  .contador { text-align: center; color: #888; font-size: 14px; margin-bottom: 10px; }
+</style>
 </head>
 <body>
-  <h1>Bem-vindo, clique no botão!</h1>
-  <button onclick="mudarCor()">Mudar cor de fundo</button>
-  <p id="contador">Você clicou 0 vezes</p>
 
-  <script src="script.js"></script>
+<div class="container">
+  <!-- TELA INICIAL -->
+  <div id="tela-inicial">
+    <h1>🔐 Quiz de Segurança da Informação</h1>
+    <p class="subtitulo">Teste seus conhecimentos sobre boas práticas de segurança digital</p>
+    <p style="text-align:center; margin: 20px 0; line-height: 1.6;">
+      Você responderá algumas perguntas sobre senhas, phishing, dados sensíveis e mais.
+      A cada resposta você recebe uma explicação. Boa sorte! 🚀
+    </p>
+    <button class="btn" onclick="iniciarQuiz()">Começar Quiz</button>
+  </div>
+
+  <!-- TELA DO QUIZ -->
+  <div id="tela-quiz" style="display:none;">
+    <div class="barra-progresso"><div class="progresso" id="progresso"></div></div>
+    <p class="contador" id="contador"></p>
+    <p class="pergunta" id="pergunta"></p>
+    <div class="opcoes" id="opcoes"></div>
+    <div class="feedback" id="feedback"></div>
+    <button class="btn" id="btn-proxima" onclick="proximaPergunta()" disabled>Próxima</button>
+  </div>
+
+  <!-- TELA DE RESULTADO -->
+  <div id="tela-resultado" style="display:none;" class="resultado">
+    <h2>Quiz Concluído! 🎯</h2>
+    <div class="pontuacao" id="pontuacao"></div>
+    <p class="mensagem-final" id="mensagem-final"></p>
+    <button class="btn" onclick="reiniciarQuiz()">Refazer Quiz</button>
+  </div>
+</div>
+
+<script>
+  // ===== BANCO DE PERGUNTAS =====
+  const perguntas = [
+    {
+      pergunta: "Qual destas é considerada uma senha forte?",
+      opcoes: ["123456", "senha123", "P@ss!2024#Xk9", "nome do seu cachorro"],
+      correta: 2,
+      explicacao: "Senhas fortes têm letras maiúsculas, minúsculas, números e símbolos, com pelo menos 12 caracteres."
+    },
+    {
+      pergunta: "Você recebe um e-mail urgente do 'banco' pedindo para clicar em um link e confirmar sua senha. O que fazer?",
+      opcoes: ["Clicar rapidamente para não perder o prazo", "Ignorar e acessar o site do banco digitando o endereço manualmente", "Responder o e-mail com seus dados", "Encaminhar para os colegas"],
+      correta: 1,
+      explicacao: "Isso é phishing! Bancos nunca pedem senha por e-mail. Sempre acesse digitando o endereço oficial."
+    },
+    {
+      pergunta: "O que significa autenticação de dois fatores (2FA)?",
+      opcoes: ["Usar duas senhas diferentes", "Confirmar identidade com dois métodos (ex: senha + código no celular)", "Fazer login em dois dispositivos", "Trocar a senha duas vezes ao ano"],
+      correta: 1,
+      explicacao: "O 2FA adiciona uma camada extra: mesmo que roubem sua senha, precisarão do segundo fator."
+    },
+    {
+      pergunta: "É seguro usar a mesma senha em vários sites?",
+      opcoes: ["Sim, facilita lembrar", "Sim, se a senha for forte", "Não, se um site vazar, todas as contas ficam expostas", "Só em sites confiáveis"],
+      correta: 2,
+      explicacao: "Reutilizar senhas é perigoso. Use um gerenciador de senhas para criar senhas únicas."
+    },
+    {
+      pergunta: "Você encontra um pen drive perdido no estacionamento da empresa. O que fazer?",
+      opcoes: ["Conectar no computador para ver de quem é", "Levar para casa", "Não conectar e entregar à equipe de TI/Segurança", "Formatar e usar"],
+      correta: 2,
+      explicacao: "Pen drives desconhecidos podem conter malware. Nunca conecte — é uma técnica de ataque comum (baiting)."
+    },
+    {
+      pergunta: "O que são dados pessoais sensíveis segundo a LGPD?",
+      opcoes: ["Apenas nome e e-mail", "Dados sobre saúde, religião, biometria, orientação sexual, etc.", "Somente CPF", "Endereço de trabalho"],
+      correta: 1,
+      explicacao: "Dados sensíveis exigem proteção redobrada: saúde, biometria, religião, opinião política, entre outros."
+    },
+    {
+      pergunta: "Ao sair da sua mesa de trabalho, você deve:",
+      opcoes: ["Deixar o computador desbloqueado para agilizar", "Bloquear a tela (Win+L)", "Desligar o monitor apenas", "Deixar documentos abertos na mesa"],
+      correta: 1,
+      explicacao: "Política de 'mesa limpa e tela limpa': sempre bloqueie o computador ao se ausentar."
+    }
+  ];
+
+  let perguntaAtual = 0;
+  let pontuacao = 0;
+
+  function iniciarQuiz() {
+    document.getElementById('tela-inicial').style.display = 'none';
+    document.getElementById('tela-quiz').style.display = 'block';
+    perguntaAtual = 0;
+    pontuacao = 0;
+    mostrarPergunta();
+  }
+
+  function mostrarPergunta() {
+    const q = perguntas[perguntaAtual];
+    document.getElementById('pergunta').textContent = q.pergunta;
+    document.getElementById('contador').textContent =
+      `Pergunta ${perguntaAtual + 1} de ${perguntas.length}`;
+
+    // Atualiza barra de progresso
+    const pct = (perguntaAtual / perguntas.length) * 100;
+    document.getElementById('progresso').style.width = pct + '%';
+
+    // Cria as opções
+    const divOpcoes = document.getElementById('opcoes');
+    divOpcoes.innerHTML = '';
+    q.opcoes.forEach((opcao, i) => {
+      const el = document.createElement('div');
+      el.className = 'opcao';
+      el.textContent = opcao;
+      el.onclick = () => responder(i, el);
+      divOpcoes.appendChild(el);
+    });
+
+    // Reseta feedback e botão
+    const fb = document.getElementById('feedback');
+    fb.className = 'feedback';
+    fb.textContent = '';
+    document.getElementById('btn-proxima').disabled = true;
+  }
+
+  function responder(indice, elemento) {
+    const q = perguntas[perguntaAtual];
+    const opcoes = document.querySelectorAll('.opcao');
+    opcoes.forEach(o => o.classList.add('desabilitada'));
+
+    const fb = document.getElementById('feedback');
+
+    if (indice === q.correta) {
+      elemento.classList.add('correta');
+      pontuacao++;
+      fb.className = 'feedback show ok';
+      fb.textContent = '✅ Correto! ' + q.explicacao;
+    } else {
+      elemento.classList.add('errada');
+      opcoes[q.correta].classList.add('correta');
+      fb.className = 'feedback show no';
+      fb.textContent = '❌ Incorreto. ' + q.explicacao;
+    }
+
+    document.getElementById('btn-proxima').disabled = false;
+  }
+
+  function proximaPergunta() {
+    perguntaAtual++;
+    if (perguntaAtual < perguntas.length) {
+      mostrarPergunta();
+    } else {
+      mostrarResultado();
+    }
+  }
+
+  function mostrarResultado() {
+    document.getElementById('tela-quiz').style.display = 'none';
+    document.getElementById('tela-resultado').style.display = 'block';
+
+    document.getElementById('pontuacao').textContent =
+      `${pontuacao} / ${perguntas.length}`;
+
+    const pct = (pontuacao / perguntas.length) * 100;
+    let msg = '';
+    if (pct === 100) msg = '🏆 Excelente! Você é um expert em segurança da informação!';
+    else if (pct >= 70) msg = '👏 Muito bom! Você tem boa consciência de segurança.';
+    else if (pct >= 50) msg = '🙂 Razoável. Vale revisar algumas boas práticas.';
+    else msg = '⚠️ Atenção! É importante reforçar seus conhecimentos em segurança.';
+
+    document.getElementById('mensagem-final').textContent = msg;
+  }
+
+  function reiniciarQuiz() {
+    document.getElementById('tela-resultado').style.display = 'none';
+    document.getElementById('tela-inicial').style.display = 'block';
+  }
+</script>
+
 </body>
 </html>
